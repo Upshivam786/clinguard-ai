@@ -9,8 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt
-
+    && pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl
 COPY src ./src
 
 EXPOSE 8000

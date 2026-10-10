@@ -1,3 +1,4 @@
+from src.privacy.pii import redact_pii
 from typing import Optional
 
 from src.retrieval.semantic_search import semantic_search
@@ -43,8 +44,9 @@ class RAGService:
         # ---------------------------------------------------------
         # 2. Patient/admission-scoped semantic retrieval
         # ---------------------------------------------------------
+        safe_question = redact_pii(question)
         results = semantic_search(
-            query=question,
+            query=safe_question,
             top_k=top_k,
             patient_id=patient_id,
             admission_id=admission_id,
@@ -74,10 +76,9 @@ class RAGService:
         context = build_patient_context(
             results,
             patient_id=patient_id,
-            question=question,
+            question=safe_question,
             max_events=max_context_events,
         )
-
         # ---------------------------------------------------------
         # 5. Generate grounded answer
         # ---------------------------------------------------------
@@ -89,7 +90,7 @@ class RAGService:
 
         else:
             answer = generate_answer(
-                query=question,
+                query=safe_question,
                 context=context,
             )
 

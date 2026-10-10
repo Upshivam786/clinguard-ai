@@ -73,6 +73,65 @@ def embed_query(query: str) -> list[float]:
     return vector
 
 
+def _is_medication_query(query: str) -> bool:
+    """
+    Lightweight query classification used only to improve
+    retrieval diversity for medication-focused questions.
+    """
+
+    medication_terms = (
+        "medication",
+        "medications",
+        "medicine",
+        "medicines",
+        "drug",
+        "drugs",
+        "prescription",
+        "prescriptions",
+    )
+
+    normalized = query.lower()
+
+    return any(
+        term in normalized
+        for term in medication_terms
+    )
+
+
+def _diversify_medication_results(
+    results: list[dict],
+    top_k: int,
+) -> list[dict]:
+    """
+    Keep the highest-similarity result for each distinct drug.
+
+    This prevents repeated clinical-event records for the same
+    medication from consuming the entire retrieval result set.
+    """
+
+    diversified = []
+    seen_drugs = set()
+
+    for result in results:
+        drug = result.get("drug")
+
+        if not drug:
+            continue
+
+        normalized_drug = drug.strip().lower()
+
+        if normalized_drug in seen_drugs:
+            continue
+
+        seen_drugs.add(normalized_drug)
+        diversified.append(result)
+
+        if len(diversified) >= top_k:
+            break
+
+    return diversified
+
+
 def semantic_search(
     query: str,
     top_k: int = 10,
@@ -99,6 +158,14 @@ def semantic_search(
 
     params = []
 
+    medication_query = _is_medication_query(query)
+
+    if medication_query:
+        filters.append(
+            "order_type = %s"
+        )
+        params.append("Medications")
+
     if patient_id is not None:
         filters.append(
             "patient_id = %s"
@@ -112,6 +179,15 @@ def semantic_search(
         params.append(admission_id)
 
     where_clause = " AND ".join(filters)
+
+    # Retrieve a larger candidate pool for medication questions
+    # so that repeated records for one drug can be removed
+    # without losing other relevant medications.
+    retrieval_limit = (
+        min(top_k * 5, 100)
+        if medication_query
+        else top_k
+    )
 
     sql = f"""
         SELECT
@@ -151,7 +227,7 @@ def semantic_search(
     params_with_vector = (
         [query_vector]
         + params
-        + [query_vector, top_k]
+        + [query_vector, retrieval_limit]
     )
 
     with psycopg.connect(
@@ -167,6 +243,7 @@ def semantic_search(
             cur.execute(
                 "SET hnsw.iterative_scan = strict;"
             )
+
             cur.execute(
                 "SET hnsw.ef_search = 1000;"
             )
@@ -192,8 +269,13 @@ def semantic_search(
         results = [
             result
             for result in results
-            if result["similarity"]
-            >= min_similarity
+            if result["similarity"] >= min_similarity
         ]
+
+    if medication_query:
+        results = _diversify_medication_results(
+            results,
+            top_k,
+        )
 
     return results
