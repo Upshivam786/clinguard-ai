@@ -165,6 +165,7 @@ clinical context.
             },
         ],
         temperature=0.1,
+        max_tokens=700,
     )
 
     answer = response.choices[0].message.content
