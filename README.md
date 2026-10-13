@@ -9,6 +9,7 @@ ClinGuard AI is a portfolio project exploring how healthcare professionals can q
 ## Features
 
 - **Clinical RAG:** Retrieves relevant clinical events and generates answers grounded in retrieved context.
+- **Bounded generation:** Limits LLM output to 700 tokens per response in the current demo configuration to help manage API usage.
 - **Patient-scoped retrieval:** Supports explicit patient and optional admission filters, with application-level boundary checks.
 - **Semantic search:** PostgreSQL, pgvector, and an HNSW vector index.
 - **PII redaction:** Microsoft Presidio redacts detected names, email addresses, phone numbers, and IP addresses from user questions before retrieval and generation.
@@ -183,7 +184,7 @@ curl -X POST http://127.0.0.1:8000/query \
   }'
 ```
 
-The response includes the question, patient/admission scope, retrieved-event count, context-event count, and generated answer.
+The response includes the question, patient/admission scope, retrieved-event count, context-event count, and generated answer. The current generator limits output to 700 tokens; longer answers may be truncated.
 
 The example identifiers are specific to the demo dataset. They are not real patient identifiers to use in other environments.
 
@@ -215,6 +216,8 @@ The generation prompt and response guardrails encourage the application to:
 - Avoid claiming that retrieved records represent the complete medical history.
 
 These controls reduce risk but cannot guarantee that every generated answer is correct.
+
+During manual UI testing, the system successfully authenticated a clinician demo account and completed a clinical query. However, the returned medication data included suspicious strength/unit values (for example, `17g`). Medication-field mapping and source-data quality therefore still require investigation. Successful generation must not be interpreted as clinical validation.
 
 ### Authentication limitations
 
@@ -283,7 +286,8 @@ The 17 existing tests passed in the development container during the documented 
 - [x] Presidio PII redaction for user questions.
 - [x] Dockerized API and Streamlit UI.
 - [x] Initial automated test suite.
-- [ ] Manual end-to-end validation of the Streamlit UI.
+- [x] Initial manual end-to-end validation of clinician login and a clinical query in the Streamlit UI.
+- [ ] Validate medication field mapping and suspicious source-data values.
 - [ ] Lightweight observability and evaluation.
 - [ ] Further authorization and security hardening.
 
