@@ -143,11 +143,15 @@ Expected API health response:
 }
 ```
 
-Open the Streamlit interface at:
+### Access the Streamlit UI
 
-`http://YOUR_SERVER_IP:8501`
+After deployment, open the Streamlit interface using your VM's external IP address on port `8501`:
 
-For remote deployments, restrict firewall access to trusted IP addresses or use an SSH tunnel. Do not expose the UI or API publicly without suitable access controls and HTTPS.
+`http://YOUR_VM_EXTERNAL_IP:8501`
+
+Replace `YOUR_VM_EXTERNAL_IP` with the external IP assigned to your server. Ensure the cloud firewall allows TCP port `8501` only from trusted source IP addresses.
+
+For safer remote access, consider an SSH tunnel or a reverse proxy with HTTPS. Do not expose the UI or API publicly without suitable access controls and HTTPS.
 
 ## Authentication and API usage
 
